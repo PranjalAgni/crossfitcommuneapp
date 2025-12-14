@@ -22,15 +22,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuthStatus = async () => {
-    try {
-      const token = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
-      setIsAuthenticated(!!token);
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
+    setIsAuthenticated(false);
+    setIsLoading(false);
+    return;
+    // try {
+    //   const token = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+    //   setIsAuthenticated(!!token);
+    // } catch (error) {
+    //   console.error('Error checking auth status:', error);
+    //   setIsAuthenticated(false);
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   const login = async () => {
