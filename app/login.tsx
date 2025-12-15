@@ -52,8 +52,7 @@ export default function LoginScreen() {
         <View className="flex-1 justify-center px-6">
           {/* Logo/Title Section */}
           <View className="items-center mb-12">
-            <Text className="text-5xl font-bold text-white mb-2">HWPO</Text>
-            <Text className="text-lg text-gray-400 uppercase tracking-wider">Training</Text>
+            <Text className="text-4xl font-bold text-white mb-2">Crossfit Commune</Text>
           </View>
 
           {/* Login Form */}
