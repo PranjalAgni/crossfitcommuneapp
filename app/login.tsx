@@ -6,41 +6,47 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock credentials
-  const MOCK_USERNAME = 'user';
-  const MOCK_PASSWORD = 'password';
-
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
     
-    if (!username.trim() || !password.trim()) {
-      setError('Please enter both username and password');
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address');
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate API call delay
-    setTimeout(async () => {
-      if (username === MOCK_USERNAME && password === MOCK_PASSWORD) {
-        try {
-          await login();
-          setIsLoading(false);
-        } catch (error) {
-          setIsLoading(false);
-          setError('Login failed. Please try again.');
+    try {
+      await login(email.trim(), password);
+      // Login successful - navigation will be handled by AuthContext
+    } catch (error: any) {
+      setIsLoading(false);
+      // Handle specific Supabase error messages
+      if (error.message) {
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please verify your email before logging in');
+        } else {
+          setError(error.message || 'Login failed. Please try again.');
         }
       } else {
-        setIsLoading(false);
-        setError('Invalid username or password');
+        setError('Login failed. Please try again.');
       }
-    }, 500);
+    }
   };
 
   return (
@@ -57,23 +63,25 @@ export default function LoginScreen() {
 
           {/* Login Form */}
           <View className="mb-6">
-            {/* Username Input */}
+            {/* Email Input */}
             <View className="mb-4">
               <Text className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">
-                Username
+                Email
               </Text>
               <View className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-4">
                 <TextInput
-                  value={username}
+                  value={email}
                   onChangeText={(text) => {
-                    setUsername(text);
+                    setEmail(text);
                     setError('');
                   }}
-                  placeholder="Enter username"
+                  placeholder="Enter email"
                   placeholderTextColor="#6B7280"
                   className="text-white text-base"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
                 />
               </View>
             </View>
@@ -133,14 +141,6 @@ export default function LoginScreen() {
             </Pressable>
           </View>
 
-          {/* Mock Credentials Hint */}
-          <View className="mt-8 items-center">
-            <Text className="text-xs text-gray-600 text-center">
-              Demo Credentials:{'\n'}
-              Username: <Text className="text-gray-400">user</Text>{'\n'}
-              Password: <Text className="text-gray-400">password</Text>
-            </Text>
-          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
