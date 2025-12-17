@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuthStatus = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('session recieved', JSON.stringify(session, null, 2));
       setUser(session?.user ?? null);
       setIsAuthenticated(!!session?.user);
       

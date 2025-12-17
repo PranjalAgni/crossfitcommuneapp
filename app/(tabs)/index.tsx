@@ -241,7 +241,7 @@ export default function HomeScreen() {
   };
 
   const getCalendarDays = () => {
-    const year = calendarMonth.getFullYear();
+    const year = calendarMonth.getFullYear(); 
     const month = calendarMonth.getMonth();
     
     // First day of the month
