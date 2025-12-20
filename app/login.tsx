@@ -1,11 +1,13 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +34,7 @@ export default function LoginScreen() {
     try {
       await login(email.trim(), password);
       // Login successful - navigation will be handled by AuthContext
+      setIsLoading(false);
     } catch (error: any) {
       setIsLoading(false);
       // Handle specific Supabase error messages
@@ -55,11 +58,16 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <View className="flex-1 justify-center px-6">
-          {/* Logo/Title Section */}
-          <View className="items-center mb-12">
-            <Text className="text-4xl font-bold text-white mb-2">Crossfit Commune</Text>
-          </View>
+        <ScrollView 
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="flex-1 justify-center px-6 py-6">
+            {/* Logo/Title Section */}
+            <View className="items-center mb-12">
+              <Text className="text-4xl font-bold text-white mb-2">Crossfit Commune</Text>
+            </View>
 
           {/* Login Form */}
           <View className="mb-6">
@@ -141,7 +149,20 @@ export default function LoginScreen() {
             </Pressable>
           </View>
 
-        </View>
+            {/* Sign Up Link */}
+            <View className="items-center mt-6">
+              <Text className="text-gray-400 text-sm">
+                Don't have an account?{' '}
+                <Text 
+                  className="text-[#D4AF37] font-semibold"
+                  onPress={() => router.replace('/signup')}
+                >
+                  Sign Up
+                </Text>
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

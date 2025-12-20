@@ -9,6 +9,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -105,6 +106,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signup = async (email: string, password: string, fullName: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            name: fullName,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user && data.session) {
+        setUser(data.user);
+        setIsAuthenticated(true);
+        
+        // Fetch user profile after successful signup
+        await fetchProfile(data.session);
+      } else if (data.user && !data.session) {
+        // User created but email confirmation required
+        // Don't set authenticated state, but don't throw error
+        throw new Error('Please check your email to confirm your account before signing in.');
+      }
+    } catch (error: any) {
+      console.error('Error during signup:', error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -121,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, userProfile, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, userProfile, login, signup, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +24,7 @@ function MenuItem({ title, onPress }: MenuItemProps) {
 
 export default function ProfileScreen() {
   const { user, userProfile, logout } = useAuth();
+  const router = useRouter();
 
   // Get user's name from profile or fallback to email
   const getUserName = () => {
@@ -59,6 +61,8 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await logout();
+      // Navigate to login screen after successful logout
+      router.replace('/login');
     } catch (error) {
       console.error('Logout error:', error);
     }
