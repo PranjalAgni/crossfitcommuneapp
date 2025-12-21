@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useMemo, useState } from 'react';
-import { Dimensions, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Dimensions, Modal, PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Mock workout data
@@ -123,6 +123,7 @@ export default function HomeScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const isNavigatingRef = useRef(false);
 
   // Get Sunday of a given date's week
   const getWeekSunday = (date: Date): Date => {
@@ -139,6 +140,83 @@ export default function HomeScreen() {
   const [currentWeekSunday, setCurrentWeekSunday] = useState(() => {
     return getWeekSunday(new Date());
   });
+
+  // Navigate to next week
+  const navigateToNextWeek = useCallback(() => {
+    if (isNavigatingRef.current) return;
+    
+    isNavigatingRef.current = true;
+    
+    // Calculate new week Sunday
+    const nextSunday = new Date(currentWeekSunday);
+    nextSunday.setDate(currentWeekSunday.getDate() + 7);
+    
+    // Calculate new selected date (same day of week)
+    const dayOfWeek = selectedDate.getDay();
+    const newSelectedDate = new Date(nextSunday);
+    newSelectedDate.setDate(nextSunday.getDate() + dayOfWeek);
+    newSelectedDate.setHours(0, 0, 0, 0);
+    
+    // Update both states
+    setCurrentWeekSunday(nextSunday);
+    setSelectedDate(newSelectedDate);
+    
+    // Reset navigation lock after a short delay
+    setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 300);
+  }, [currentWeekSunday, selectedDate]);
+
+  // Navigate to previous week
+  const navigateToPreviousWeek = useCallback(() => {
+    if (isNavigatingRef.current) return;
+    
+    isNavigatingRef.current = true;
+    
+    // Calculate new week Sunday
+    const prevWeekSunday = new Date(currentWeekSunday);
+    prevWeekSunday.setDate(currentWeekSunday.getDate() - 7);
+    
+    // Calculate new selected date (same day of week)
+    const dayOfWeek = selectedDate.getDay();
+    const newSelectedDate = new Date(prevWeekSunday);
+    newSelectedDate.setDate(prevWeekSunday.getDate() + dayOfWeek);
+    newSelectedDate.setHours(0, 0, 0, 0);
+    
+    // Update both states
+    setCurrentWeekSunday(prevWeekSunday);
+    setSelectedDate(newSelectedDate);
+    
+    // Reset navigation lock after a short delay
+    setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 300);
+  }, [currentWeekSunday, selectedDate]);
+
+  // Pan responder for swipe gestures - simpler and more reliable
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (evt, gestureState) => {
+          // Only respond to horizontal swipes
+          return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+        },
+        onPanResponderRelease: (evt, gestureState) => {
+          const { dx, vx } = gestureState;
+          
+          // Swipe right (positive dx) = previous week
+          if (dx > 50 || vx > 0.5) {
+            navigateToPreviousWeek();
+          }
+          // Swipe left (negative dx) = next week
+          else if (dx < -50 || vx < -0.5) {
+            navigateToNextWeek();
+          }
+        },
+      }),
+    [navigateToNextWeek, navigateToPreviousWeek]
+  );
 
   // Generate exactly 7 days (Sunday-Saturday) for the current week
   const calendarDays = useMemo(() => {
@@ -296,59 +374,64 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-black">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View className="px-6 pt-6 pb-4">
-          <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-4xl font-bold text-white">Training</Text>
-            <Pressable 
-              onPress={() => {
-                setCalendarMonth(selectedDate);
-                setShowCalendarPicker(true);
-              }}
-            >
-              <Ionicons name="calendar-outline" size={24} color="#D4AF37" />
-            </Pressable>
-          </View>
-          <Text className="text-lg text-gray-400">{formatDateSubtitle(selectedDate)}</Text>
+      {/* Fixed Header */}
+      <View className="px-6 pt-6 pb-4 bg-black">
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-4xl font-bold text-white">Training</Text>
+          <Pressable 
+            onPress={() => {
+              setCalendarMonth(selectedDate);
+              setShowCalendarPicker(true);
+            }}
+          >
+            <Ionicons name="calendar-outline" size={24} color="#D4AF37" />
+          </Pressable>
         </View>
+        <Text className="text-lg text-gray-400">{formatDateSubtitle(selectedDate)}</Text>
+      </View>
 
-        {/* Calendar Strip - Display Only */}
-        <View className="px-2 py-4">
-          <View className="flex-row">
-            {calendarDays.map((date, index) => {
-              const isSelected = isSelectedDate(date);
-              const dayName = getDayShortName(date);
-              const dayNumber = date.getDate();
-              
-              return (
-                <Pressable
-                  key={`${date.getTime()}-${index}`}
-                  onPress={() => handleDateSelect(date)}
-                  style={{ width: cardWidth }}
-                  className={`mx-0.5 px-1 py-2.5 rounded-xl items-center ${
-                    isSelected 
-                      ? 'bg-gray-800 border-2 border-white' 
-                      : 'bg-gray-900 border border-gray-700'
-                  }`}
-                >
-                  <Text className={`text-xs font-semibold mb-0.5 ${
-                    isSelected ? 'text-white' : 'text-gray-400'
-                  }`}>
-                    {dayName}
-                  </Text>
-                  <Text className={`text-sm font-bold ${
-                    isSelected ? 'text-white' : 'text-gray-300'
-                  }`}>
-                    {dayNumber}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+      {/* Fixed Calendar Strip - Swipeable */}
+      <View className="px-2 py-4 bg-black" {...panResponder.panHandlers}>
+        <View className="flex-row">
+          {calendarDays.map((date, index) => {
+            const isSelected = isSelectedDate(date);
+            const dayName = getDayShortName(date);
+            const dayNumber = date.getDate();
+            
+            return (
+              <Pressable
+                key={`${date.getTime()}-${index}`}
+                onPress={() => handleDateSelect(date)}
+                style={{ width: cardWidth }}
+                className={`mx-0.5 px-1 py-2.5 rounded-xl items-center ${
+                  isSelected 
+                    ? 'bg-gray-800 border-2 border-white' 
+                    : 'bg-gray-900 border border-gray-700'
+                }`}
+              >
+                <Text className={`text-xs font-semibold mb-0.5 ${
+                  isSelected ? 'text-white' : 'text-gray-400'
+                }`}>
+                  {dayName}
+                </Text>
+                <Text className={`text-sm font-bold ${
+                  isSelected ? 'text-white' : 'text-gray-300'
+                }`}>
+                  {dayNumber}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
+      </View>
 
-        {/* Workout Content Area */}
+      {/* Scrollable Workout Content Area */}
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        scrollEnabled={true}
+      >
         <View className="px-6 pb-8">
           {workout ? (
             <>
